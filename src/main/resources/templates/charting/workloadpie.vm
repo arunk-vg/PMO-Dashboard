@@ -1,0 +1,54 @@
+#if ($loggedin)
+<table class=tableBorder border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td>
+<table border="0" cellpadding="3" cellspacing="1" width="100%">
+    <tr class=rowHeader>
+        <td class="colHeaderLink">
+        $i18n.getText("portlet.workloadpie.name"):
+        #if($issueTimeType)
+            <font size="1">$i18n.getText("gadget.workloadpie.field.issuetimetype.$issueTimeType")</font>
+        #end
+        #if($statisticType)
+            <font size="1">
+                #if($statisticType.startsWith($customFieldPrefix))
+                    $i18n.getText("gadget.workloadpie.field.by") $report.getCustomFieldLabel($statisticType)
+                #else
+                    $i18n.getText("gadget.workloadpie.field.by") $i18n.getText("gadget.filterstats.field.statistictype.$statisticType")
+                #end
+            </font>
+        #end
+        #if ($project)
+            <b><a href="${requestContext.canonicalBaseUrl}/browse/$project.key">$textutils.htmlEncode($project.name)</a></b>
+        #elseif ($searchRequest)
+            <b><a href="${requestContext.canonicalBaseUrl}/secure/IssueNavigator.jspa?requestId=${searchRequest.id}&mode=hide">$textutils.htmlEncode($searchRequest.name)</a></b>
+            #else
+                <b>$i18n.getText("portlet.workloadpie.anonymousFilter")</b>
+        #end
+        </td>
+    </tr>
+
+    #if ($errorMessage)
+        <tr bgcolor="#FFFFFF"><td>$i18n.getText($errorMessage)</td></tr>
+    #elseif ((!$completeDataset) || ($completeDataset.columnCount == 0))
+        <tr bgcolor="#FFFFFF"><td>$i18n.getText("portlet.workloadpie.noissues")</td></tr>
+    #else
+        <tr bgcolor="#FFFFFF">
+            <td width="100%" align="center">
+                #if ($base64Image)
+                    #if ($imagemapHtml)
+                        $imagemapHtml
+                    #end
+                    <center>
+                        <img src='$base64Image' border='0' #if ($imagemapHtml) usemap="\#$imagemapName" #end width="$imageWidth" height="$imageHeight" /><br />
+                    </center>
+
+                    $i18n.getText("portlet.workloadpie.numissues", "<b>$numIssues</b>").
+                #else
+                    $i18n.getText("portlet.workloadpie.nochart")
+                #end
+            </td>
+        </tr>
+    #end
+
+</table>
+</td></tr></table>
+#end

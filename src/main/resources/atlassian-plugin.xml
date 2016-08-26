@@ -1,0 +1,29 @@
+<atlassian-plugin key="net.valueglobal.jira.plugins.colorpiechart" name="${project.name}" pluginsVersion="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${pom.organization.name}" url="${pom.organization.url}"/>
+        <param name="atlassian-data-center-compatible">true</param>
+    </plugin-info>
+  
+    
+    
+     <resource type="i18n" name="workloadpiechart" location="net.valueglobal.jira.plugins.colorpiechart.workloadpiechart"/>
+    
+     <rest key="chartingPluginRESTEndpoints" name="Charting plugin REST endpoints" path="/chartplugin" version="1.0" description="REST endpoints for the JIRA Charting Plugin."> </rest>
+
+    <resource type="download" name="workloadpie-screenshot.png" location="net/valueglobal/jira/plugins/colorpiechart/images/workloadpie-screenshot.png"/>
+    <resource type="download" name="workloadpie-thumb.png" location="net/valueglobal/jira/plugins/colorpiechart/images/workloadpie-thumb.png"/>
+    
+        
+     <gadget key="workloadpie-gadget" name="PMO Dashboard Color Coding Pie Chart Gadget" location="net/valueglobal/jira/plugins/colorpiechart/gadget/workloadpie-gadget.xml">
+        <param name="roles-required">browse</param>
+    </gadget>
+
+	 <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties" />    
+    <component-import key="eventPublisher" interface="com.atlassian.event.api.EventPublisher"/>
+	<component key="eventListener" class="net.valueglobal.jira.plugins.colorpiechart.listener.CustomFieldUpdaterListener">
+    	<description>Class that processes the incoming JIRA issue events.</description>
+	</component>
+
+</atlassian-plugin>

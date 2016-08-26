@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Module>
+    <ModulePrefs title="__MSG_portlet.workloadpie.name__" directory_title="__MSG_portlet.workloadpie.name__" description="__MSG_portlet.workloadpie.description__"
+                 author="Arun_VG" author_affiliation="Arun_VG"
+                 author_location="Chennai,India" height="300"
+                 screenshot='#staticResourceUrl("net.valueglobal.jira.plugins.colorpiechart:workloadpie-gadget", "workloadpie-screenshot.png")'
+                 thumbnail='#staticResourceUrl("net.valueglobal.jira.plugins.colorpiechart:workloadpie-gadget", "workloadpie-thumb.png")'>
+        <Optional feature="gadget-directory">
+            <Param name="categories">
+                JIRA
+                Charts
+            </Param>
+        </Optional>
+        <Require feature="views" />
+        <Optional feature="atlassian.util" />
+        <Require feature="setprefs" />
+        <Require feature="settitle"/>
+        <Require feature="dynamic-height"/>
+        <Require feature="oauthpopup" />
+        #oauth
+        #supportedLocales("gadget.common,gadget.filterstats,gadget.workloadpie,portlet.workloadpie,core.dateutils")
+    </ModulePrefs>
+    <UserPref name="isConfigured" datatype="hidden" default_value="false" />
+    <UserPref name="isPopup" datatype="hidden" default_value="false"/>
+    <UserPref name="refresh" datatype="hidden" default_value="false"/>
+    <UserPref name="projectOrFilterId" datatype="hidden" />
+    <UserPref name="statistictype" datatype="hidden" />
+    <UserPref name="issuetimetype" datatype="hidden" />
+    <Content type="html" view="profile,canvas,home">
+        <![CDATA[
+        Hi Hello
+        
+        
+        #requireResource("com.atlassian.jira.gadgets:autocomplete")
+        #includeResources()
+
+        <style type="text/css">
+            .view {padding:0.5em 1em 0.25em;}
+        </style>
+
+        <script type="text/javascript">
+AJS.Gadget({
+    baseUrl: "__ATLASSIAN_BASE_URL__",
+    useOauth: "/rest/gadget/1.0/currentUser",
+    config: {
+        descriptor: function (args) {
+            var gadget = this;
+            var searchParam;
+            if (/^jql-/.test(this.getPref("projectOrFilterId")) || this.getPref("isPopup") === "true"){
+                searchParam =
+                    {
+                        userpref: "projectOrFilterId",
+                        type: "hidden",
+                        value: gadgets.util.unescapeString(gadget.getPref("projectOrFilterId"))
+                    };
+            }
+            else{
+                searchParam = AJS.gadget.fields.projectOrFilterPicker(gadget,"projectOrFilterId");
+            }
+
+            return  {
+                action: "/rest/chartplugin/1.0/workloadpie/config/validate",
+                theme : (function() { return gadgets.window.getViewportDimensions().width < 500 ? "top-label" : "long-label"; })(),
+                fields: [
+                    jQuery.extend(true, {}, searchParam, {
+                        label: gadget.getMsg("portlet.workloadpie.field.project.or.filter.name"),
+                        description: gadget.getMsg("portlet.workloadpie.field.project.or.filter.description")
+                    }),
+                    {
+                        userpref: "statistictype",
+                        label: gadget.getMsg("gadget.common.stattype.label"),
+                        description: gadget.getMsg("gadget.common.stattype.description"),
+                        type: "select",
+                        selected: gadget.getPref("statistictype"),
+                        options: args.statistictype.stats
+                    },
+                    {
+                        userpref: "issuetimetype",
+                        label: gadget.getMsg("gadget.workloadpie.field.issuetimetype.name"),
+                        description: gadget.getMsg("gadget.workloadpie.field.issuetimetype.description"),
+                        type: "select",
+                        selected: gadget.getPref("issuetimetype"),
+                        options:[
+                            {
+                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.timespent"),
+                                value:"timespent"
+                            },
+                            {
+                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.originalestimate"),
+                                value:"originalestimate"
+                            },
+                            {
+                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.currentestimate"),
+                                value:"currentestimate"
+                            }
+                        ]
+                    },
+                    AJS.gadget.fields.nowConfigured()
+                ]
+            };
+        },
+        args: [
+            {
+                key: "statistictype",
+                ajaxOptions: "/rest/gadget/1.0/statTypes"
+            },
+        ]
+    },
+    view: {
+        enableReload: true,
+        onResizeReload: true,
+        template: function (args) {
+            var gadget = this;
+
+            gadget.getView().addClass("chart").empty();
+
+            var requiresTitle = function() {
+                return args.chart.filterTitle && args.chart.filterTitle !== "" && args.chart.filterTitle !== "gadget.common.anonymous.filter" && gadget.getPref("isPopup") === "false";
+            };
+
+            var setTitles = function () {
+                if (requiresTitle()){
+                    // This is used to pass the name of filter or project to the picker
+                    gadget.projectOrFilterName = args.chart.filterTitle;
+                    gadgets.window.setTitle(AJS.format("__MSG_gadget.workloadpie.title.specific__", args.chart.filterTitle));
+                }
+            }();
+
+            var getChartContainer = function ()
+            {
+                var chart = AJS.$("<div id='chart' />").appendTo(gadget.getView());
+                return function () {
+                    return chart;
+                };
+            }();
+
+            var safeEscapeString = function(text) {
+                if(text) {
+                    return gadgets.util.escapeString(text);
+                } else {
+                    return '';
+                }
+            };
+
+            var getChartImg = function ()
+            {
+                AJS.$("#chart", gadget.getView()).get(0).innerHTML += "<img style='display:none' src='" + args.chart.base64Image + "' alt='" + safeEscapeString(args.chart.filterTitle) + "' usemap='#" +
+                args.chart.imageMapName + "' height='" + args.chart.height + "' width='" + args.chart.width + "' />";
+                gadget.getView().append(args.chart.imageMap);
+                gadget.showLoading();
+                var chartImg = AJS.$("img", getChartContainer());
+                AJS.$(chartImg, gadget.getView()).load(function () {
+                    AJS.$(this).show();
+                    gadget.hideLoading();
+                    gadget.resize();
+                });
+                return function () {
+                    return chartImg;
+                };
+            }();
+
+            var setSummary = (function() {
+                var linkStart = "";
+                var linkEnd = "";
+                if(requiresTitle()) {
+                    linkStart = "<a href=\"__ATLASSIAN_BASE_URL__" + args.chart.filterUrl + "\" target=\"_parent\" title=\"" + safeEscapeString(args.chart.filterTitle) + "\">";
+                    linkEnd = "</a>";
+                }
+
+                var statTypeLabel = args.chart.customFieldLabel || gadget.getMsg("gadget.filterstats.field.statistictype." + args.chart.statType);
+
+                getChartContainer().append(
+                        AJS.$("<p/>").append(AJS.format("__MSG_gadget.workloadpie.summary__", linkStart, "<strong>" + args.chart.timeSpent + "</strong>", linkEnd) + "&nbsp;&nbsp;&nbsp;&nbsp;" +
+                                            "<strong>" + gadget.getMsg("gadget.workloadpie.field.issuetimetype." + args.chart.issueTimeType) + "</strong>" +
+                                             "&nbsp;" + gadget.getMsg("gadget.workloadpie.field.by") + "&nbsp;" +
+                                             "<strong>" + AJS.$("<span/>", { "text" : statTypeLabel }).html() + "</strong>")
+                );
+            })();
+
+            if (gadgets.views.getCurrentView().getName() === "canvas") {
+                var dataTable = AJS.gadgets.templater.Table ({
+                    descriptor: function (args) {
+                        return {
+                            cols: [
+                                {header: "", preSorted: true},
+                                {header: gadget.getMsg("core.dateutils.hours"), sort: "asc"},
+                                {header: "%"}
+                            ],
+                            data: function () {
+                                var rows = [];
+                                AJS.$(args.chartData).each(function (i) {
+                                    rows.push([
+                                        {value: i, label: AJS.$("<span/>", { text : this.key }).html()},
+                                        {value: this.value, label: "<a href='" + this.url + "'>" + this.value + "</a>"},
+                                        {value: this.percentage, label: this.percentage}
+                                    ]);
+                                });
+                                return rows;
+                            }()
+                        };
+                    },
+                    sortable: true,
+                    args: [{key: "chartData", data: args.chart.data}, {key: "statType", data: args.chart.statType}]
+                });
+
+                var getDataTable = function () {
+                    return AJS.$("table.aui", gadget.getView());
+                };
+
+                var configureAlignment = function () {
+                    getDataTable().css("marginLeft", function (){
+                        var chartWidth = getChartContainer().outerWidth();
+                        var offsetX = (gadget.getView().outerWidth() - chartWidth - getDataTable().width()) / 2;
+                        if (offsetX > 0) {
+                            return offsetX;
+                        }
+                        return 0;
+                    }());
+                };
+
+                var createCanvasDataTable = function () {
+                    dataTable.addCallback(function (fragment) {
+                        gadget.getView().append(fragment);
+                        configureAlignment();
+                        gadget.resize();
+                    });
+                    dataTable.build();
+                };
+
+                // finally after the image has loaded we create the data table
+                getChartImg().load(createCanvasDataTable);
+            }
+        },
+        args: [{
+            key: "chart",
+            ajaxOptions: function () {
+                var width = Math.round(gadgets.window.getViewportDimensions().width * (gadgets.views.getCurrentView().getName() === "canvas" ? 0.6 : 0.9));
+                if (width < 150){
+                    width = 150;
+                }
+                var height = Math.round(width*2/3);
+
+                if (gadgets.views.getCurrentView().getName() === "canvas") {
+                    return {
+                        url: "/rest/chartplugin/1.0/workloadpie/generate",
+                        data:  {
+                            projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
+                            statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
+                            issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
+                            width: Math.round(width * 0.7),
+                            height: Math.round(height * 0.7),
+                            returnData: true,
+                            inline: true
+                        }
+                    };
+                } else {
+                    return {
+                        url: "/rest/chartplugin/1.0/workloadpie/generate",
+                        data:  {
+                            projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
+                            statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
+                            issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
+                            width: width,
+                            height: height,
+                            inline: true
+                        }
+                    };
+                }
+                    console.log("GADGET : ", gadget);
+                
+            }
+        }]
+    }
+    
+});
+        </script>
+
+
+        ]]>
+    </Content>
+</Module>
