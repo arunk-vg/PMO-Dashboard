@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
+import com.atlassian.crowd.embedded.api.User;
 import com.atlassian.event.api.EventListener;
 import com.atlassian.event.api.EventPublisher;
 import com.atlassian.jira.component.ComponentAccessor;
@@ -13,13 +14,20 @@ import com.atlassian.jira.event.issue.IssueEvent;
 import com.atlassian.jira.event.type.EventType;
 import com.atlassian.jira.issue.CustomFieldManager;
 import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.issue.IssueManager;
 import com.atlassian.jira.issue.ModifiedValue;
 import com.atlassian.jira.issue.MutableIssue;
 import com.atlassian.jira.issue.customfields.manager.OptionsManager;
 import com.atlassian.jira.issue.customfields.option.Option;
 import com.atlassian.jira.issue.customfields.option.Options;
 import com.atlassian.jira.issue.fields.CustomField;
+import com.atlassian.jira.issue.index.IssueIndexManager;
+import com.atlassian.jira.issue.link.IssueLink;
+import com.atlassian.jira.issue.link.IssueLinkManager;
 import com.atlassian.jira.issue.util.DefaultIssueChangeHolder;
+import com.atlassian.jira.plugin.jql.function.LinkedIssuesFunction;
+import com.atlassian.jira.project.ProjectManager;
+import com.atlassian.jira.rest.v2.issue.Link;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +92,7 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     public int compareTimespentEstimated(long timespent,long estimated){
     	
     	long tenPercent = (long) (0.10 * estimated); 
+    	System.out.println("Ten Percent : " +tenPercent);
     	if(timespent <= estimated)
     	{
     		System.out.println("Timespent Less Than Estimated = Green");
@@ -282,7 +291,34 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         Long eventTypeId = issueEvent.getEventTypeId();
         Issue issue = issueEvent.getIssue();
 
+        User currentUserObj = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+     
+  IssueManager issueManager = ComponentAccessor.getIssueManager();
+  IssueLinkManager	linkMgr = (IssueLinkManager) ComponentAccessor.getIssueLinkManager().getLinkCollection(issue, currentUserObj);
+ /* ProjectManager     projectMgr = ComponentAccessor.getProjectManager();
+  IssueIndexManager issueIndexMgr = ComponentAccessor.getIssueIndexManager();*/
+  log.debug ("Current issue ID: " + issue.getId());
+  log.debug ("Looking for Links...");
+  System.out.println("Issue Link Manager : " +linkMgr);
+  /*for each(IssueLinkManager	linkMgr : String t)
+  {
+	  
+  }*/
+  
+  
         
+      /*//Iterate through the dev issue's links
+        for (IssueLink link : linkMgr.getOutwardLinks(issue.getId())) {
+        // issueLinkTypeName = link.issueLinkType.name;
+         LinkedIssue linkedIssue =    link.getDestinationObject();
+            String linkProjectName = linkedIssue.getProjectObject().getName();
+             linkedIssueKey = linkedIssue.getKey();
+             linkedIssueID = linkedIssue.getId();
+             linkedIssueStatus = linkedIssue.getStatusObject().getName();*/
+        
+   //  IssueLinkManager links; //.getLinkCollection (issue, user, true)
+        
+    // links.getLinkCollection(issue,);
         if (eventTypeId.equals(EventType.ISSUE_CREATED_ID)) {
         	updateHealthFieldOnCreate(issue);        	
         } 
