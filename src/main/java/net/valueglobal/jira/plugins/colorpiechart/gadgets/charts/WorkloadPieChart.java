@@ -262,7 +262,7 @@ public class WorkloadPieChart implements ChartParamKeys
             int aInt;
             Object [] test = keys.toArray();
             
-            System.out.println("Test :" + test[0]);
+            //System.out.println("Test :" + test[0]);
             System.out.println("Test length :" + test.length);
 
             

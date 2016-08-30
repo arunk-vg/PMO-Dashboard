@@ -9,6 +9,8 @@ import java.util.List;
 import com.atlassian.crowd.embedded.api.User;
 import com.atlassian.event.api.EventListener;
 import com.atlassian.event.api.EventPublisher;
+import com.atlassian.jira.ComponentManager;
+import com.atlassian.jira.bc.issue.link.IssueLinkService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.event.issue.IssueEvent;
 import com.atlassian.jira.event.type.EventType;
@@ -21,13 +23,16 @@ import com.atlassian.jira.issue.customfields.manager.OptionsManager;
 import com.atlassian.jira.issue.customfields.option.Option;
 import com.atlassian.jira.issue.customfields.option.Options;
 import com.atlassian.jira.issue.fields.CustomField;
+import com.atlassian.jira.issue.index.IndexException;
 import com.atlassian.jira.issue.index.IssueIndexManager;
 import com.atlassian.jira.issue.link.IssueLink;
 import com.atlassian.jira.issue.link.IssueLinkManager;
+import com.atlassian.jira.issue.link.LinkCollection;
 import com.atlassian.jira.issue.util.DefaultIssueChangeHolder;
 import com.atlassian.jira.plugin.jql.function.LinkedIssuesFunction;
 import com.atlassian.jira.project.ProjectManager;
 import com.atlassian.jira.rest.v2.issue.Link;
+import com.atlassian.jira.util.ImportUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +76,6 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         // unregister ourselves with the EventPublisher
         eventPublisher.unregister(this);
     }
-
-    
     
     public Timestamp convertDateToTimestamp(java.util.Date date){
     	
@@ -98,13 +101,13 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     		System.out.println("Timespent Less Than Estimated = Green");
     		return 0;    	// Green
     	}
-    	else if(timespent > estimated && timespent != tenPercent + estimated)
+    	else if(timespent > estimated && timespent > tenPercent + estimated)
     	{
     		System.out.println("Timespent Greater Than Estimated and != 10% variance = Red");
     		return 1; // Red
 
     	}
-    	else if(timespent == tenPercent + estimated)
+    	else if(timespent > estimated && timespent <= tenPercent + estimated)
     	{
     		System.out.println("Timespent == 10% variance = Yellow");
     		return 2; // Yellow
@@ -163,6 +166,24 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     
     }
     
+    public int getIvisionIssueLinkCount(Issue issue)
+    {
+    	int linkcount = 0;
+    	List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());
+    	for (IssueLink issueLink : links) 
+		{
+    		String destId = issueLink.getDestinationObject().getKey();
+    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
+        	System.out.println("Link Available : " + links.size() + "Destination Id : "+ destId + "Destination Object : "+destObj);
+        	if(destObj.equals("TRN"))
+        	{
+        		linkcount = linkcount + 1;
+        	}
+		}
+    	System.out.println("Link Count : "+linkcount);
+    	return linkcount;
+    }
+    
     public void updateHealthField(Issue issue){
          Calendar calendar = Calendar.getInstance();
          java.util.Date date = calendar.getTime();       
@@ -178,61 +199,81 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
          // Comparing DueDates
        //  int timeValue = issue.getDueDate().compareTo(currentTimestamp);
          
+         int issueLinked = getIvisionIssueLinkCount(issue);
          
          int timeValue = compareDueDateCurrentDate(issue.getDueDate(),currentTimestamp);
          
          System.out.println("DueDateVSCurrentDate : "+timeValue);
          
          int comparedHours = -1;
-         if(issue.getEstimate() != null || issue.getTimeSpent() != null){
+         if(issue.getOriginalEstimate() != null || issue.getTimeSpent() != null){
          	System.out.println("Estimated : " +issue.getEstimate()+ issue.getOriginalEstimate() + " Timespent : " +issue.getTimeSpent());
-             comparedHours = compareTimespentEstimated(issue.getTimeSpent(), issue.getEstimate());
+             comparedHours = compareTimespentEstimated(issue.getTimeSpent(), issue.getOriginalEstimate());
              System.out.println(" Compared hours : "+comparedHours);
 
          }
-         	if(timeValue == 0 && comparedHours == 0 )
-              {	
-         		 newOption = options.get(2);// Green // Check your option id ----0-Green 
-         		 															   //1-Red 
-         		 															   //2-Yellow
-              }
-         	 else if(timeValue == 0 && comparedHours == 1)
-         	 {
-         		 newOption = options.get(0); // Red // Check your option id
-         	 }
-         	 else if(timeValue == 0 && comparedHours == 2)
-         	 {
-         		 newOption = options.get(1); // Yellow Check your option id
-         	 }
-         	 else if(timeValue == 1 && comparedHours == 0)
-         	 {
-         		 newOption = options.get(0); // Red // Check your option id
-         	 }
-         	 else if(timeValue == 1 && comparedHours == 1)
-         	 {
-         		 newOption = options.get(0); // Red Check your option id
-         	 }
-         	 else if(timeValue == 1 && comparedHours == 2)
-         	 {
-         		 newOption = options.get(0); // Red Check your option id
-         	 }
-         	 else if(timeValue == 2 && comparedHours == 0)
-         	 {
-         		 newOption = options.get(1); // Red // Check your option id
-         	 }
-         	 else if(timeValue == 2 && comparedHours == 1)
-         	 {
-         		 newOption = options.get(0); // Red Check your option id
-         	 }
-         	 else if(timeValue == 2 && comparedHours == 2)
-         	 {
-         		 newOption = options.get(1); // Yellow Check your option id
-         	 }
-         	
+         
+         if(issueLinked > 0)
+         {
+        	 newOption = options.get(0);
+         }
+         else
+         {
+     	
+		         	if(timeValue == 0 && comparedHours == 0 )
+		              {	
+		         		 newOption = options.get(2);// Green // Check your option id ----0-Green 
+		         		 															   //1-Red 
+		         		 															   //2-Yellow
+		              }
+		         	 else if(timeValue == 0 && comparedHours == 1)
+		         	 {
+		         		 newOption = options.get(0); // Red // Check your option id
+		         	 }
+		         	 else if(timeValue == 0 && comparedHours == 2)
+		         	 {
+		         		 newOption = options.get(1); // Yellow Check your option id
+		         	 }
+		         	 else if(timeValue == 1 && comparedHours == 0)
+		         	 {
+		         		 newOption = options.get(0); // Red // Check your option id
+		         	 }
+		         	 else if(timeValue == 1 && comparedHours == 1)
+		         	 {
+		         		 newOption = options.get(0); // Red Check your option id
+		         	 }
+		         	 else if(timeValue == 1 && comparedHours == 2)
+		         	 {
+		         		 newOption = options.get(0); // Red Check your option id
+		         	 }
+		         	 else if(timeValue == 2 && comparedHours == 0)
+		         	 {
+		         		 newOption = options.get(1); // Red // Check your option id
+		         	 }
+		         	 else if(timeValue == 2 && comparedHours == 1)
+		         	 {
+		         		 newOption = options.get(0); // Red Check your option id
+		         	 }
+		         	 else if(timeValue == 2 && comparedHours == 2)
+		         	 {
+		         		 newOption = options.get(1); // Yellow Check your option id
+		         	 }		         	
+		        
+         }
+         
          System.out.println("newOption val being set to Health value :" + newOption);             
          ModifiedValue mVal = new ModifiedValue(issue.getCustomFieldValue(customFieldName), newOption );            
          System.out.println(mVal);
-         customFieldName.updateValue(null, issue, mVal, new DefaultIssueChangeHolder());  
+         customFieldName.updateValue(null, issue, mVal, new DefaultIssueChangeHolder());
+         try {
+	           	 @SuppressWarnings("deprecation")
+				 IssueIndexManager issueIndexManager = ComponentManager.getInstance().getIndexManager();
+	             boolean origVal = ImportUtils.isIndexIssues();
+	             ImportUtils.setIndexIssues(true);
+	             issueIndexManager.reIndex(issue);
+	             ImportUtils.setIndexIssues(origVal);
+	          }
+         catch (IndexException e) {	e.printStackTrace();}
     }
     
     public void updateHealthFieldOnCreate(Issue issue){
@@ -258,6 +299,7 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
             System.out.println(" Compared hours : "+comparedHours);
 
         }*/
+            	 
         	if(timeValue == 0)
              {	
         		 newOption = options.get(2);// Green // Check your option id ----0-Green 
@@ -280,58 +322,51 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         ModifiedValue mVal = new ModifiedValue(issue.getCustomFieldValue(customFieldName), newOption );            
         System.out.println(mVal);
         customFieldName.updateValue(null, issue, mVal, new DefaultIssueChangeHolder());  
+     	
+       
+         try {
+               	 @SuppressWarnings("deprecation")
+				IssueIndexManager issueIndexManager = ComponentManager.getInstance().getIndexManager();
+                 boolean origVal = ImportUtils.isIndexIssues();
+                 ImportUtils.setIndexIssues(true);
+                 issueIndexManager.reIndex(issue);
+	             ImportUtils.setIndexIssues(origVal);
+			} catch (IndexException e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
+											}
    }
 
     /**
      * Receives any {@code IssueEvent}s sent by JIRA.
      * @param issueEvent the IssueEvent passed to us
      */
-    @EventListener
+   
+    @EventListener    
     public void onIssueEvent(IssueEvent issueEvent) {
         Long eventTypeId = issueEvent.getEventTypeId();
         Issue issue = issueEvent.getIssue();
-
-        User currentUserObj = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-     
-  IssueManager issueManager = ComponentAccessor.getIssueManager();
-  IssueLinkManager	linkMgr = (IssueLinkManager) ComponentAccessor.getIssueLinkManager().getLinkCollection(issue, currentUserObj);
- /* ProjectManager     projectMgr = ComponentAccessor.getProjectManager();
-  IssueIndexManager issueIndexMgr = ComponentAccessor.getIssueIndexManager();*/
-  log.debug ("Current issue ID: " + issue.getId());
-  log.debug ("Looking for Links...");
-  System.out.println("Issue Link Manager : " +linkMgr);
-  /*for each(IssueLinkManager	linkMgr : String t)
-  {
-	  
-  }*/
-  
-  
-        
-      /*//Iterate through the dev issue's links
-        for (IssueLink link : linkMgr.getOutwardLinks(issue.getId())) {
-        // issueLinkTypeName = link.issueLinkType.name;
-         LinkedIssue linkedIssue =    link.getDestinationObject();
-            String linkProjectName = linkedIssue.getProjectObject().getName();
-             linkedIssueKey = linkedIssue.getKey();
-             linkedIssueID = linkedIssue.getId();
-             linkedIssueStatus = linkedIssue.getStatusObject().getName();*/
-        
-   //  IssueLinkManager links; //.getLinkCollection (issue, user, true)
-        
-    // links.getLinkCollection(issue,);
+		/*IssueLinkManager issueLinkManager = ComponentAccessor.getIssueLinkManager();  
+		IssueLink test = issueLinkManager.getIssueLink(issue.getId());  
+		System.out.println("Issue Link : "+test.getDestinationObject().getKey());*/
+ 
         if (eventTypeId.equals(EventType.ISSUE_CREATED_ID)) {
-        	updateHealthFieldOnCreate(issue);        	
+        	updateHealthFieldOnCreate(issue);
+        
         } 
         else 
         {
+        	
         	if(issue.getOriginalEstimate()!= null && issue.getTimeSpent()!= null)
         	{
         		updateHealthField(issue);
+        		
         	}
         	else
         	{
-            	updateHealthFieldOnCreate(issue);        	
-        	}
+            	updateHealthFieldOnCreate(issue); 
+            	
+            }
         }
     }
     
