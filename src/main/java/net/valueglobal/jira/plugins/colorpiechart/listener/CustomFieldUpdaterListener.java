@@ -175,7 +175,7 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     		String destId = issueLink.getDestinationObject().getKey();
     		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
         	System.out.println("Link Available : " + links.size() + "Destination Id : "+ destId + "Destination Object : "+destObj);
-        	if(destObj.equals("TRN"))
+        	if(destObj.equals("PROJECT"))
         	{
         		linkcount = linkcount + 1;
         	}
@@ -288,6 +288,8 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         System.out.println("Option List values : "+options);
         Option newOption = null;
                
+        int issueLinked = getIvisionIssueLinkCount(issue);
+
         int timeValue = compareDueDateCurrentDate(issue.getDueDate(),currentTimestamp);
         
         System.out.println("DueDateVSCurrentDate : "+timeValue);
@@ -299,7 +301,13 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
             System.out.println(" Compared hours : "+comparedHours);
 
         }*/
-            	 
+        
+        if(issueLinked > 0)
+        {
+       	 newOption = options.get(0);
+        }
+        else
+        {    	 
         	if(timeValue == 0)
              {	
         		 newOption = options.get(2);// Green // Check your option id ----0-Green 
@@ -317,7 +325,7 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         		 newOption = options.get(1); // Yellow // Check your option id
         	 }
         	
-        	
+        }	
         System.out.println("newOption val being set to Health value :" + newOption);             
         ModifiedValue mVal = new ModifiedValue(issue.getCustomFieldValue(customFieldName), newOption );            
         System.out.println(mVal);
