@@ -170,27 +170,94 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     @SuppressWarnings("deprecation")
 	public int getIvisionIssueLinkCount(Issue issue)
     {
+    	System.out.println("///////////////////////////////////////////////////////////"
+    			+ "/////////////////////////////////////////////////////////"
+    			+ "FROM GET_IVISION_ISSUE_LINK_COUNT METHOD"
+    			+ "////////////////////////////////////////////////////"
+    			+ "////////////////////////////////////////////");
+    	
     	int linkcount = 0;
-    	List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());
-    	for (IssueLink issueLink : links) 
+    	List<IssueLink> outlinks =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());
+    	List<IssueLink> inlinks =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());
+		
+    	System.out.println("Has Out Link: " +outlinks + " Has In Link: " +inlinks);
+    	
+    	if(!outlinks.isEmpty())
 		{
-    		String destId = issueLink.getDestinationObject().getKey();
-    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
-    		/*GenericValue status = issueLink.getDestinationObject().getStatus();
-    		GenericValue resolution = issueLink.getDestinationObject().getResolution();
-    		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();*/
-    		String statusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
-        	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
-    		System.out.println(" Status Name value : " + statusName );
-        	System.out.println("Link Available : " + links.size() + "Destination Id : "+ destId + "Destination Object : "+destObj);
-        	//String resolve = "resolved";
-        	String resolve = "done";
-        	String closed = "closed";
-        	if(destObj.equals("PROJECT") && !(statusName.equals(resolve) || statusName.equals(closed)))// || !statusName.contains(closed)))
-        	{
-        		linkcount = linkcount + 1;
-        	}
-        	
+			System.out.println("Has Outward Links");
+			for (IssueLink issueLink : outlinks) 
+		
+				{	
+				
+				
+/*					String srcId = issueLink.getSourceObject().getKey();
+					String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+		    		String destId = issueLink.getDestinationObject().getKey();
+		    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
+		    		GenericValue status = issueLink.getDestinationObject().getStatus();
+		    		GenericValue resolution = issueLink.getDestinationObject().getResolution();
+		    		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();
+		    		String statusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+		        	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
+		    		System.out.println(" Status Name value : " + statusName );
+		        	System.out.println("Link Available : " + outlinks.size() + " Source Id : " + srcId + " Source Object : " + srcObj + " Destination Id : "+ destId + " Destination Object : "+destObj);*/
+		        
+				
+				String srcId = issueLink.getSourceObject().getKey();
+	        		String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+	        		String destId = issueLink.getDestinationObject().getKey();
+	        		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();  	        	
+	        		String sourcestatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	        		String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+	            	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
+	        		System.out.println(" Link Available : " + outlinks.size() + 
+   						" Source Id : "+ srcId + 
+   						" Source Object : "+srcObj +
+   						" Destination Id : "+destId+
+   						" Destination Object"+ destObj+
+   						" Source Status Name :"+ sourcestatusName+
+   						" Destination Status Name"+deststatusName); 
+				
+				
+				String resolve = "resolved";
+		        	//String resolve = "done";
+		        	String closed = "closed";
+		        	if(srcObj.equals("PROJECT") && !(sourcestatusName.equals(resolve) || sourcestatusName.equals(closed)))// || !statusName.contains(closed)))
+		        	{
+		        		linkcount = linkcount + 1;
+		        	}
+		        	
+				}
+		}
+		else if(!inlinks.isEmpty())
+		{
+			System.out.println("Has Inward Links");
+			for (IssueLink issueLink : inlinks) 
+			{	
+				String srcId = issueLink.getSourceObject().getKey();
+	        	String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+	        	String destId = issueLink.getDestinationObject().getKey();
+	        	String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();  	        	
+	        	String sourcestatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	        	String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();         
+	        	System.out.println(" Link Available : " + inlinks.size() + 
+   						" Source Id : "+ srcId + 
+   						" Source Object : "+srcObj +
+   						" Destination Id : "+destId+
+   						" Destination Object"+ destObj+
+   						" Source Status Name :"+ sourcestatusName+
+   						" Destination Status Name"+deststatusName); 		
+				String resolve = "resolved";
+		        //String resolve = "done";
+		        String closed = "closed";
+		        	if(destObj.equals("PROJECT") && !(deststatusName.equals(resolve) || deststatusName.equals(closed)))// || !statusName.contains(closed)))
+		        	{
+		        		linkcount = linkcount + 1;
+		        	}
+		        	
+				}
+			
+			
 		}
     	System.out.println("Link Count : "+linkcount);
     	return linkcount;
@@ -299,7 +366,8 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         List<Option> options = optManager.getOptions(customFieldName.getRelevantConfig(issue));//getAllOptions();// 
         System.out.println("Option List values : "+options);
         Option newOption = null;
-               
+        System.out.println("Issue Key passed onto the linkgetmethod : "+issue.getKey());
+          
         int issueLinked = getIvisionIssueLinkCount(issue);
 
         int timeValue = compareDueDateCurrentDate(issue.getDueDate(),currentTimestamp);
@@ -357,6 +425,7 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 											}
    }
 
+    
     /**
      * Receives any {@code IssueEvent}s sent by JIRA.
      * @param issueEvent the IssueEvent passed to us
@@ -376,26 +445,36 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         } 
        else 
         {
-    	  /* if(eventTypeId.equals(EventType.ISSUE_RESOLVED_ID))
-           {*/
+    	  
                issue = issueEvent.getIssue();
-           	   List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());//getOutwardLinks(issue.getId());
-           	
+           	   List<IssueLink> inlinks =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());//getOutwardLinks(issue.getId());
+           	   List<IssueLink> outlinks =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());//getOutwardLinks(issue.getId());
+
+           	   
       	   // TO check link available or not
-           	if(!links.isEmpty()) 
+           	if(!inlinks.isEmpty()) 
            	{
-	   	        	for (IssueLink issueLink : links) 
+           		System.out.println("////////////////////////////////////////////////////"
+           				+ "FROM INWARD LINK Listener:"
+           				+ "///////////////////////////////////////////////////////");
+	   	        	for (IssueLink issueLink : inlinks) 
 	   	    		{
-	   	        		String destId = issueLink.getSourceObject().getKey();
-	   	        		String destObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
-	   	        		/*GenericValue status = issueLink.getDestinationObject().getStatus();
-	   	        		GenericValue resolution = issueLink.getDestinationObject().getResolution();
-	   	        		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();*/
-	   	        		String statusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	   	        		String srcId = issueLink.getSourceObject().getKey();
+	   	        		String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+	   	        		String destId = issueLink.getDestinationObject().getKey();
+	   	        		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();  	        	
+	   	        		String sourcestatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	   	        		String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+
 	   	        		Issue issuelinked = issueLink.getSourceObject();
 	   	            	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
-	   	        		System.out.println("FOr pmo Issue Linked through  Status Name value : " + statusName );
-	   	            	System.out.println("Link Available : " + links.size() + "Destination Id : "+ destId + "Destination Object : "+destObj);                      	
+	   	            	System.out.println(" Link Available : " + inlinks.size() + 
+	   	            						" Source Id : "+ srcId + 
+	   	            						" Source Object : "+srcObj +
+	   	            						" Destination Id : "+destId+
+	   	            						" Destination Object"+ destObj+
+	   	            						" Source Status Name :"+ sourcestatusName+
+	   	            						" Destination Status Name"+deststatusName);                      	
 	   	    		
 	   	            	if(issuelinked.getOriginalEstimate()!= null && issuelinked.getTimeSpent()!= null)
 		   	        	{
@@ -411,8 +490,54 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 	   	        	
 	   	        	
           	}
+           	else if(!outlinks.isEmpty())
+           	{
+           		System.out.println("////////////////////////////////////////////////////"
+           				+ "FROM OUTWARD LINK:"
+           				+ "///////////////////////////////////////////////////////");
+           		
+           		for (IssueLink issueLink : outlinks) 
+   	    		{
+           			String srcId = issueLink.getSourceObject().getKey();
+   	        		String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+   	        		String destId = issueLink.getDestinationObject().getKey();
+   	        		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();  	        	
+   	        		String sourcestatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+   	        		String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+   	        		Issue issuelinked = issueLink.getDestinationObject();
+   	            	
+   	             System.out.println("Issue linked getKey : "+issuelinked.getKey());
+
+   	        		
+   	        		//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
+   	        		System.out.println(" Link Available : " + outlinks.size() + 
+       						" Source Id : "+ srcId + 
+       						" Source Object : "+srcObj +
+       						" Destination Id : "+destId+
+       						" Destination Object"+ destObj+
+       						" Source Status Name :"+ sourcestatusName+
+       						" Destination Status Name"+deststatusName);       
+   	        		
+   	            	if(issuelinked.getOriginalEstimate()!= null && issuelinked.getTimeSpent()!= null)
+	   	        	{
+	   	        		updateHealthField(issuelinked);
+	   	        		
+	   	        	}
+	   	        	else
+	   	        	{
+	   	            	updateHealthFieldOnCreate(issuelinked); 
+	   	            	
+	   	            }
+   	    		}
+           		
+           	}
            	else
            	{
+           		System.out.println("////////////////////////////////////////////////////"
+           				+ "No LINK:"
+           				+ "///////////////////////////////////////////////////////");
+           		
+           		
            		if(issue.getOriginalEstimate()!= null && issue.getTimeSpent()!= null)
                	{
                		updateHealthField(issue);
