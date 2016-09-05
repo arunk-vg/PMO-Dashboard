@@ -91,7 +91,7 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
     public Response generate(
             @QueryParam("projectOrFilterId") String projectOrFilterId,
             @QueryParam("statistictype") String statisticType,
-            @QueryParam("issuetimetype") String issueTimeType,
+           // @QueryParam("issuetimetype") String issueTimeType,
             @QueryParam("width") @DefaultValue("400") int width,
             @QueryParam("height") @DefaultValue("250") int height,
             @QueryParam("returnData") @DefaultValue("false") boolean returnData,
@@ -112,7 +112,7 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
         // So that we don't crash in the navigator view. No and we can't use @DefaultValue because the
         // navigator sends it with an empty value
         statisticType = StringUtils.defaultIfEmpty(statisticType, "assignees");
-        issueTimeType = StringUtils.defaultIfEmpty(issueTimeType, "timespent");
+      //  issueTimeType = StringUtils.defaultIfEmpty(issueTimeType, "timespent");
 
         String customFieldLabel = null;
         if (statisticType != null && statisticType.startsWith(CUSTOM_FIELD_PREFIX))
@@ -124,14 +124,14 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
                     jiraAuthenticationContext,
                     searchRequest,
                     statisticType,
-                    issueTimeType,
+                  //  issueTimeType,
                     width,
                     height
             ) : chart.generate(
                     jiraAuthenticationContext,
                     searchRequest,
                     statisticType,
-                    issueTimeType,
+                   // issueTimeType,
                     width,
                     height
             );
@@ -149,26 +149,24 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
                     getFilterUrl(params),
                     jiraDurationUtils.getShortFormattedDuration((Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS)),
                     statisticType,
-                    issueTimeType,
+                   // issueTimeType,
                     customFieldLabel,
                     theChart.getBase64Image());
 
             if (returnData)
             {
                 workloadPieChartJson.data = getData(theChart.getParameters());
-                workloadPieChartJson.timeSpent = jiraDurationUtils.getShortFormattedDuration((Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS));
+           //     workloadPieChartJson.timeSpent = jiraDurationUtils.getShortFormattedDuration((Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS));
             }
 
             return Response.ok(workloadPieChartJson).cacheControl(CacheControl.NO_CACHE).build();
         }
         catch (ArithmeticException ex)
         {
-            if (StringUtils.isEmpty(issueTimeType))
-            {
-                //Assume timespent, which is the default old behaviour
-                issueTimeType = "timespent";
-            }
-            return createServiceUnavailableErrorMessageResponse(jiraAuthenticationContext.getI18nHelper().getText("report.workloadpie.arithmeticerror." + issueTimeType));
+        	ex.printStackTrace();
+          System.out.println("Print Stack Trace : "+ ex);
+          System.out.println("Get Cause : "+ex.getCause());  
+            return createServiceUnavailableErrorMessageResponse("Response Not Fine has exception : " +ex.getStackTrace());
         }
     }
 
@@ -241,14 +239,14 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
         @XmlElement
         private List<WorkloadPieDataRow> data;
 
-        @XmlElement
-        private String timeSpent;
+       /* @XmlElement
+        private String timeSpent;*/
 
         @XmlElement
         private String statType;
 
-        @XmlElement
-        private String issueTimeType;
+       /* @XmlElement
+        private String issueTimeType;*/
 
         @XmlElement
         private String customFieldLabel;
@@ -263,7 +261,9 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
         }
 ///CLOVER:ON
 
-        public WorkloadPieChartJson(String location, String imageMap, String imageMapName, int width, int height, String filterTitle, String filterUrl, String timeSpent, String statType, String issueTimeType, String customFieldLabel, String base64Image)
+        public WorkloadPieChartJson(String location, String imageMap, String imageMapName, int width, int height, String filterTitle, String filterUrl, String timeSpent, String statType, 
+        		//String issueTimeType,
+        		String customFieldLabel, String base64Image)
         {
             this.location = location;
             this.imageMap = imageMap;
@@ -272,9 +272,9 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             this.height = height;
             this.filterTitle = filterTitle;
             this.filterUrl = filterUrl;
-            this.timeSpent = timeSpent;
+           // this.timeSpent = timeSpent;
             this.statType = statType;
-            this.issueTimeType = issueTimeType;
+           // this.issueTimeType = issueTimeType;
             this.customFieldLabel = customFieldLabel;
             this.base64Image = base64Image;
         }

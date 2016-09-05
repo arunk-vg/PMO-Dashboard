@@ -4,9 +4,10 @@
     <tr class=rowHeader>
         <td class="colHeaderLink">
         $i18n.getText("portlet.workloadpie.name"):
-        #if($issueTimeType)
+    #**    #if($issueTimeType)
             <font size="1">$i18n.getText("gadget.workloadpie.field.issuetimetype.$issueTimeType")</font>
-        #end
+       	   #end
+    **#   	   
         #if($statisticType)
             <font size="1">
                 #if($statisticType.startsWith($customFieldPrefix))

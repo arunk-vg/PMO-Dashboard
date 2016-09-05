@@ -98,21 +98,31 @@ public class WorkloadPieChart implements ChartParamKeys
     }
 
     public Chart generateInline(JiraAuthenticationContext jiraAuthenticationContext, SearchRequest searchRequest,
-            String statisticType, String issueTimeType, int width, int height)
+            String statisticType, 
+            //String issueTimeType,
+            int width, int height)
             throws SearchException, IOException
     {
-        return generateInternal(jiraAuthenticationContext, searchRequest, statisticType, issueTimeType, width, height, true);
+        return generateInternal(jiraAuthenticationContext, searchRequest, statisticType,
+        		//issueTimeType, 
+        		width, height, true);
     }
 
     public Chart generate(JiraAuthenticationContext jiraAuthenticationContext, SearchRequest searchRequest,
-            String statisticType, String issueTimeType, int width, int height)
+            String statisticType,
+            //String issueTimeType, 
+            int width, int height)
             throws SearchException, IOException
     {
-        return generateInternal(jiraAuthenticationContext, searchRequest, statisticType, issueTimeType, width, height, false);
+        return generateInternal(jiraAuthenticationContext, searchRequest, statisticType,
+        		//issueTimeType,
+        		width, height, false);
     }
 
     private Chart generateInternal(JiraAuthenticationContext jiraAuthenticationContext, SearchRequest searchRequest,
-            String statisticType, String issueTimeType, int width, int height, boolean inline)
+            String statisticType,
+            //String issueTimeType,
+            int width, int height, boolean inline)
             throws SearchException, IOException
     {
         final JiraDurationUtils jiraDurationUtils = getJiraDurationUtils();
@@ -120,26 +130,17 @@ public class WorkloadPieChart implements ChartParamKeys
         final User user = jiraAuthenticationContext.getLoggedInUser();
         StatisticAccessorBean statBean = getStatisticAccessorBean(searchRequestCopy, user);
 
-        StatisticsMapper yAxisStatsMapper;
-        if ("currentestimate".equals(issueTimeType))
-        {
-            yAxisStatsMapper = TimeTrackingStatisticsMapper.TIME_ESTIMATE_CURR;
-        }
-        else if ("originalestimate".equals(issueTimeType))
-        {
-            yAxisStatsMapper = TimeTrackingStatisticsMapper.TIME_ESTIMATE_ORIG;
-        }
-        else
-        {
-            yAxisStatsMapper = TimeTrackingStatisticsMapper.TIME_SPENT;
-        }
+        StatisticsMapper yAxisStatsMapper; //statBean.getMapper(statisticType);
+        
+            yAxisStatsMapper = TimeTrackingStatisticsMapper.PROGRESS;
+       
 
         final StatisticsMapper xAxisStatsMapper = statBean.getMapper(statisticType);
 
         TwoDimensionalStatsMap twoDimensionalStatsMap = getTwoDimensionalStatistics(
                 user, searchRequestCopy,
                 xAxisStatsMapper,
-                new StatisticsMapperDelegator(yAxisStatsMapper));
+               yAxisStatsMapper);
 
         I18nHelper i18nHelper = jiraAuthenticationContext.getI18nHelper();
 
@@ -419,6 +420,7 @@ public class WorkloadPieChart implements ChartParamKeys
             Number n = dataset.getValue(key);
             total += n.longValue();
         }
+        System.out.println("total Calculate Total : "+total);
         return total;
     }
 

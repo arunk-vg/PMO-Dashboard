@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 
 import com.atlassian.crowd.embedded.api.User;
@@ -171,27 +172,96 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 	public int getIvisionIssueLinkCount(Issue issue)
     {
     	int linkcount = 0;
-    	List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());
-    	for (IssueLink issueLink : links) 
-		{
-    		String destId = issueLink.getDestinationObject().getKey();
-    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
-    		/*GenericValue status = issueLink.getDestinationObject().getStatus();
-    		GenericValue resolution = issueLink.getDestinationObject().getResolution();
-    		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();*/
-    		String statusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
-        	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
-    		System.out.println(" Status Name value : " + statusName );
-        	System.out.println("Link Available : " + links.size() + "Destination Id : "+ destId + "Destination Object : "+destObj);
-        	//String resolve = "resolved";
-        	String resolve = "done";
-        	String closed = "closed";
-        	if(destObj.equals("PROJECT") && !(statusName.equals(resolve) || statusName.equals(closed)))// || !statusName.contains(closed)))
-        	{
-        		linkcount = linkcount + 1;
-        	}
-        	
-		}
+    	// Outward Link
+    	List<IssueLink> outlinks =ComponentAccessor.getIssueLinkManager().getOutwardLinks(issue.getId());
+    	if(!outlinks.isEmpty())
+    	{
+    		System.out.println("Out Link Present");
+
+	    	for (IssueLink issueLink : outlinks) 
+			{
+	    		String destId = issueLink.getDestinationObject().getKey();
+	    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
+	    		String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+	    		String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+	    		String srcstatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	    		System.out.println("Destination Status Name value : " + deststatusName );
+	        	System.out.println("Destination Object : "+destObj);
+        		System.out.println("Source Status Name Value : " +srcstatusName);
+        		System.out.println("Source object : " +srcObj);
+
+
+	        	//String resolve = "resolved";
+	        	String resolve = "done";
+	        	String closed = "closed";
+	        	if(destObj.equals("PROJECT") && !(deststatusName.equals(resolve) || deststatusName.equals(closed)))// || !statusName.contains(closed)))
+	        	{
+	        		System.out.println("Count Added Issue is Red");
+	        		linkcount = linkcount + 1;
+	        		
+	        	}
+	        	else if(srcObj.equals("PROJECT"))// && !(srcstatusName.equals(resolve) || srcstatusName.equals(closed)))
+	        	{
+	        		System.out.println("OutWard Link From Ivision, Send the Issue object for updating the health column");
+	        		Issue destOfIvisionIssue = issueLink.getDestinationObject();
+	        		if(destOfIvisionIssue.getOriginalEstimate()!= null && destOfIvisionIssue.getTimeSpent()!= null)
+	   	        	{
+	   	        		updateHealthField(destOfIvisionIssue);
+	   	        		
+	   	        	}
+	   	        	else
+	   	        	{
+	   	            	updateHealthFieldOnCreate(destOfIvisionIssue); 
+	   	            	
+	   	            }
+	        		
+	        	}
+	        	
+			}
+	    }
+    	//Inward Link
+	    List<IssueLink> inlinks =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());
+	    if(!inlinks.isEmpty())
+	    {
+    		System.out.println("In Link Present");
+
+	    	for(IssueLink issueLink:inlinks)
+	    	{
+	    		String destId = issueLink.getDestinationObject().getKey();
+	    		String destObj = issueLink.getDestinationObject().getProjectObject().getOriginalKey();
+	    		String srcObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
+	    		String deststatusName = issueLink.getDestinationObject().getStatusObject().getName().toLowerCase();
+	    		String srcstatusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
+	    		System.out.println("Destination Status Name value : " + deststatusName );
+	        	System.out.println("Destination Object : "+destObj);
+        		System.out.println("Source Status Name Value : " +srcstatusName);
+        		System.out.println("Source object : " +srcObj);
+	        	//String resolve = "resolved";
+	        	String resolve = "done";
+	        	String closed = "closed";
+	        	if(srcObj.equals("PROJECT") && !(srcstatusName.equals(resolve) || srcstatusName.equals(closed)))// || !statusName.contains(closed)))
+	        	{
+	        		linkcount = linkcount + 1;
+	        	}
+	        	else if(destObj.equals("PROJECT"))// && !(deststatusName.equals(resolve) || deststatusName.equals(closed)))
+	        	{
+	        		Issue srcOfIvisionIssue = issueLink.getSourceObject();
+	        		if(srcOfIvisionIssue.getOriginalEstimate()!= null && srcOfIvisionIssue.getTimeSpent()!= null)
+	   	        	{
+	   	        		updateHealthField(srcOfIvisionIssue);
+	   	        		
+	   	        	}
+	   	        	else
+	   	        	{
+	   	            	updateHealthFieldOnCreate(srcOfIvisionIssue); 
+	   	            	
+	   	            }
+	        		
+	        	}
+	    		
+	    	}
+	    }
+	
     	System.out.println("Link Count : "+linkcount);
     	return linkcount;
     }
@@ -365,22 +435,18 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
     @EventListener    
     public void onIssueEvent(IssueEvent issueEvent) {
         Long eventTypeId = issueEvent.getEventTypeId();
-        Issue issue = issueEvent.getIssue();
-		/*IssueLinkManager issueLinkManager = ComponentAccessor.getIssueLinkManager();  
-		IssueLink test = issueLinkManager.getIssueLink(issue.getId());  
-		System.out.println("Issue Link : "+test.getDestinationObject().getKey());*/
- 
-        if (eventTypeId.equals(EventType.ISSUE_CREATED_ID)) {
+        Issue issue = issueEvent.getIssue(); 
+       if (eventTypeId.equals(EventType.ISSUE_CREATED_ID)) {
         	updateHealthFieldOnCreate(issue);
-        
         } 
        else 
         {
-    	  /* if(eventTypeId.equals(EventType.ISSUE_RESOLVED_ID))
-           {*/
-               issue = issueEvent.getIssue();
-           	   List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());//getOutwardLinks(issue.getId());
-           	
+    	   /*System.out.println("Event Name : " + eventTypeId.toString());
+  
+           	 List<IssueLink> links =ComponentAccessor.getIssueLinkManager().getInwardLinks(issue.getId());//getOutwardLinks(issue.getId());
+           	   System.out.println("LINKSSS : " +links.size());
+           	  
+           	   
       	   // TO check link available or not
            	if(!links.isEmpty()) 
            	{
@@ -388,9 +454,9 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 	   	    		{
 	   	        		String destId = issueLink.getSourceObject().getKey();
 	   	        		String destObj = issueLink.getSourceObject().getProjectObject().getOriginalKey();
-	   	        		/*GenericValue status = issueLink.getDestinationObject().getStatus();
+	   	        		GenericValue status = issueLink.getDestinationObject().getStatus();
 	   	        		GenericValue resolution = issueLink.getDestinationObject().getResolution();
-	   	        		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();*/
+	   	        		String resolutionName = issueLink.getDestinationObject().getResolutionObject().getName();
 	   	        		String statusName = issueLink.getSourceObject().getStatusObject().getName().toLowerCase();
 	   	        		Issue issuelinked = issueLink.getSourceObject();
 	   	            	//System.out.println("getStatus Value : " + status + " Status Name value : " + statusName +" getResolution Value : " + resolution + " Resolution Name : " +resolutionName);
@@ -411,18 +477,37 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 	   	        	
 	   	        	
           	}
-           	else
+           	else*/
            	{
-           		if(issue.getOriginalEstimate()!= null && issue.getTimeSpent()!= null)
-               	{
-               		updateHealthField(issue);
-               		
-               	}
-               	else
-               	{
-                   	updateHealthFieldOnCreate(issue); 
-                   	
-                }
+           		String issueStatusCheck = issue.getStatusObject().getName().toLowerCase(); 
+           		String ivisionProject = issue.getProjectObject().getOriginalKey().toLowerCase();
+           		System.out.println(" Issue Status Check: "+issueStatusCheck);
+           		if(!(issueStatusCheck.equals("done") || issueStatusCheck.equals("closed"))) // Change the done to resolve in insightsdev
+           		{
+	           		if(issue.getOriginalEstimate()!= null && issue.getTimeSpent()!= null)
+	               	{
+	               		updateHealthField(issue);
+	               		
+	               	}
+	               	else
+	               	{
+	                   	updateHealthFieldOnCreate(issue); 
+	                   	
+	                }
+           		}
+           		else if(ivisionProject.equals("project"))
+           		{
+           			if(issue.getOriginalEstimate()!= null && issue.getTimeSpent()!= null)
+	               	{
+	               		updateHealthField(issue);
+	               		
+	               	}
+	               	else
+	               	{
+	                   	updateHealthFieldOnCreate(issue); 
+	                   	
+	                }
+           		}
            	}
 
            
@@ -442,14 +527,5 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         
       
     }
-    
-   /* private MutableIssue getMutableIssue(Issue issue) {
-        MutableIssue mutableIssue;
-        if (issue instanceof MutableIssue)   {
-            mutableIssue = (MutableIssue)issue;
-        } else {
-            mutableIssue = ComponentAccessor.getIssueManager().getIssueObject(issue.getKey());
-        }
-        return mutableIssue;
-    }*/
+   
 }

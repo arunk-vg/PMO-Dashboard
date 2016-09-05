@@ -26,7 +26,7 @@
     <UserPref name="refresh" datatype="hidden" default_value="false"/>
     <UserPref name="projectOrFilterId" datatype="hidden" />
     <UserPref name="statistictype" datatype="hidden" />
-    <UserPref name="issuetimetype" datatype="hidden" />
+    <!-- <UserPref name="issuetimetype" datatype="hidden" /> -->
     <Content type="html" view="profile,canvas,home">
         <![CDATA[
         Hi Hello
@@ -74,28 +74,7 @@ AJS.Gadget({
                         type: "select",
                         selected: gadget.getPref("statistictype"),
                         options: args.statistictype.stats
-                    },
-                    {
-                        userpref: "issuetimetype",
-                        label: gadget.getMsg("gadget.workloadpie.field.issuetimetype.name"),
-                        description: gadget.getMsg("gadget.workloadpie.field.issuetimetype.description"),
-                        type: "select",
-                        selected: gadget.getPref("issuetimetype"),
-                        options:[
-                            {
-                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.timespent"),
-                                value:"timespent"
-                            },
-                            {
-                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.originalestimate"),
-                                value:"originalestimate"
-                            },
-                            {
-                                label:gadget.getMsg("gadget.workloadpie.field.issuetimetype.currentestimate"),
-                                value:"currentestimate"
-                            }
-                        ]
-                    },
+                    },                   
                     AJS.gadget.fields.nowConfigured()
                 ]
             };
@@ -172,8 +151,8 @@ AJS.Gadget({
 
                 getChartContainer().append(
                         AJS.$("<p/>").append(AJS.format("__MSG_gadget.workloadpie.summary__", linkStart, "<strong>" + args.chart.timeSpent + "</strong>", linkEnd) + "&nbsp;&nbsp;&nbsp;&nbsp;" +
-                                            "<strong>" + gadget.getMsg("gadget.workloadpie.field.issuetimetype." + args.chart.issueTimeType) + "</strong>" +
-                                             "&nbsp;" + gadget.getMsg("gadget.workloadpie.field.by") + "&nbsp;" +
+<!--                                             "<strong>" + gadget.getMsg("gadget.workloadpie.field.issuetimetype." + args.chart.issueTimeType) + "</strong>" +
+ -->                                             "&nbsp;" + gadget.getMsg("gadget.workloadpie.field.by") + "&nbsp;" +
                                              "<strong>" + AJS.$("<span/>", { "text" : statTypeLabel }).html() + "</strong>")
                 );
             })();
@@ -247,8 +226,8 @@ AJS.Gadget({
                         data:  {
                             projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
                             statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
-                            issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
-                            width: Math.round(width * 0.7),
+<!--                             issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
+ -->                            width: Math.round(width * 0.7),
                             height: Math.round(height * 0.7),
                             returnData: true,
                             inline: true
@@ -260,15 +239,15 @@ AJS.Gadget({
                         data:  {
                             projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
                             statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
-                            issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
-                            width: width,
+<!--                             issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
+ -->                            width: width,
                             height: height,
                             inline: true
                         }
                     };
                 }
-                    console.log("GADGET : ", gadget);
-                
+<!--                     console.log("GADGET : ", gadget);
+ -->                
             }
         }]
     }
