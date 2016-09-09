@@ -22,6 +22,7 @@ import com.atlassian.jira.issue.search.SearchProvider;
 import com.atlassian.jira.issue.search.SearchRequest;
 import com.atlassian.jira.issue.statistics.FilterStatisticsValuesGenerator;
 import com.atlassian.jira.issue.statistics.StatisticsMapper;
+import com.atlassian.jira.issue.statistics.ComponentStatisticsMapper;
 import com.atlassian.jira.issue.statistics.TimeTrackingStatisticsMapper;
 import com.atlassian.jira.issue.statistics.TwoDimensionalStatsMap;
 import com.atlassian.jira.issue.statistics.util.TwoDimensionalTermHitCollector;
@@ -32,6 +33,7 @@ import com.atlassian.jira.util.velocity.VelocityRequestContext;
 import com.atlassian.jira.util.velocity.VelocityRequestContextFactory;
 import com.atlassian.jira.web.FieldVisibilityManager;
 import com.atlassian.jira.web.bean.StatisticAccessorBean;
+import com.atlassian.query.Query;
 import com.atlassian.query.QueryImpl;
 
 import org.apache.log4j.Logger;
@@ -45,7 +47,6 @@ import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 import org.jfree.data.general.PieDataset;
-
 
 import java.awt.Color;
 import java.io.IOException;
@@ -130,10 +131,13 @@ public class WorkloadPieChart implements ChartParamKeys
         final User user = jiraAuthenticationContext.getLoggedInUser();
         StatisticAccessorBean statBean = getStatisticAccessorBean(searchRequestCopy, user);
 
-        StatisticsMapper yAxisStatsMapper; //statBean.getMapper(statisticType);
+        StatisticsMapper yAxisStatsMapper; 
         
-            yAxisStatsMapper = TimeTrackingStatisticsMapper.PROGRESS;
-       
+              
+            yAxisStatsMapper = TimeTrackingStatisticsMapper.TIME_ESTIMATE_ORIG;
+            
+            System.out.println("Yaxis StatsMapper : " +yAxisStatsMapper);
+
 
         final StatisticsMapper xAxisStatsMapper = statBean.getMapper(statisticType);
 
@@ -165,8 +169,10 @@ public class WorkloadPieChart implements ChartParamKeys
             public String generateSectionLabel(PieDataset dataset, Comparable key)
             {
                 Number value = dataset.getValue(key);
+                System.out.println("Set label generator dataset : "+dataset.getKeys());
+                System.out.println("dataset.getItemCount : "+dataset.getItemCount());
                 String timeInDays = jiraDurationUtils.getShortFormattedDuration(value.longValue());
-                return key + ": " + timeInDays;
+                return key.toString();
 
             }
         });
@@ -176,19 +182,28 @@ public class WorkloadPieChart implements ChartParamKeys
             {
                 int convertToSec = 1;
                 Number number = dataset.getValue(key);
-                return key + ": " + jiraDurationUtils.getShortFormattedDuration(convertToSec * (number.longValue())) + " (" + (100 * number.longValue() / totalWorkload) + "%)";
+                System.out.println("Generate Tool Tip Number"+number);
+                return key.toString();// + ": " + jiraDurationUtils.getShortFormattedDuration(convertToSec * (number.longValue())) + " (" + (100 * number.longValue() / totalWorkload) + "%)";
             }
         });
-
+	
 
         final VelocityRequestContext velocityRequestContext = velocityRequestContextFactory.getJiraVelocityRequestContext();
         PieURLGenerator pieURLGenerator = new PieURLGenerator()
         {
             public String generateURL(PieDataset dataset, Comparable key, int section)
             {
+            	System.out.println("Pie Url Generator : "+key);
+            	System.out.println("Pie Url Generator dataset item count : "+dataset.getItemCount());
+            	System.out.println("Pie Url Generator section : "+section);
+
+
                 if (key instanceof PieSegmentWrapper)
                 {
                     SearchRequest searchUrlSuffix = xAxisStatsMapper.getSearchUrlSuffix(((PieSegmentWrapper) key).getKey(), searchRequestCopy);
+                    //  System.out.println("Pie Url Generator : searchUrlSuffix : "+ searchUrlSuffix.getQuery());
+                    System.out.println("Pie Url Generator : searchRequestCopy : "+searchRequestCopy);
+
                     return velocityRequestContext.getCanonicalBaseUrl() + "/secure/IssueNavigator.jspa?reset=true" + searchService.getQueryString(user, (searchUrlSuffix == null) ? new QueryImpl() : searchUrlSuffix.getQuery());
                 }
                 else
@@ -196,7 +211,6 @@ public class WorkloadPieChart implements ChartParamKeys
             }
         };
         piePlot.setURLGenerator(pieURLGenerator);
-
         if (inline)
         {
             helper.generateInline(width, height);
@@ -214,17 +228,26 @@ public class WorkloadPieChart implements ChartParamKeys
         DefaultCategoryDataset completeDataset = new DefaultCategoryDataset();
         for (Iterator iterator = sortedDataset.getKeys().iterator(); iterator.hasNext();)
         {
+        	System.out.println("Iterator value : "+ iterator);
             Comparable key = (Comparable) iterator.next();
+        	System.out.println("key value : "+ key);
+
             Number value = sortedDataset.getValue(key);
+        	System.out.println("Number value : "+ value);
+System.out.println("CompleteDataset of column count : "+completeDataset.getColumnCount());
             // The explicit usage of the Integer wrapper is required so that the pie segment labels appear properly.
-            completeDataset.addValue(new Integer(value.intValue() / 3600), i18nHelper.getText("core.dateutils.hours"), key);
+        /*  if(!value.equals(0)){
+        	completeDataset.addValue(new Integer(value.intValue() / 3600), i18nHelper.getText("core.dateutils.hours"), key);
             completeDataset.addValue((100 * value.intValue() / totalWorkload), "%", key);
+          }*/
         }
         params.put(KEY_COMPLETE_DATASET, completeDataset);
         params.put(KEY_COMPLETE_DATASET_URL_GENERATOR, new CategoryURLGenerator()
         {
             public String generateURL(CategoryDataset categoryDataset, int row, int col)
             {
+            	System.out.println("Row : "+row);
+            	System.out.println("Col : "+col);
                 Comparable key = categoryDataset.getColumnKey(col);
                 if (key instanceof PieSegmentWrapper)
                 {
@@ -355,7 +378,9 @@ public class WorkloadPieChart implements ChartParamKeys
     private TwoDimensionalStatsMap getTwoDimensionalStatistics(User user, SearchRequest searchRequest, StatisticsMapper xAxis, StatisticsMapper yAxis)
             throws SearchException
     {
+    	System.out.println("Y Axis Mapper : "+ yAxis);
         TwoDimensionalStatsMap statisticsMap2d = getTwoDimensionalStatsMap(xAxis, yAxis);
+        System.out.println("Statistics Map 2d : "+statisticsMap2d.getyAxisMapper().toString());
         Collector hitCollector = getTwoDimensionalTermHitCollector(statisticsMap2d);
         searchProvider.search(searchRequest.getQuery(), user, hitCollector);
 
@@ -384,29 +409,40 @@ public class WorkloadPieChart implements ChartParamKeys
         // weigh each statistic type with time factor - 2D matrix multiply
         Collection statisticsColl = statsMap.getXAxis();
         Collection timeSpentColl = statsMap.getYAxis();
+        int totalTime = 0;
+        
 
         for (Iterator iteratorC = statisticsColl.iterator(); iteratorC.hasNext();)
         {
             Object entry = iteratorC.next();
+            System.out.println("Entry : "+entry);
             if (entry != null || statisticType.equals(FilterStatisticsValuesGenerator.ASSIGNEES))
             {  // we only count issues where components have been specified
                // JCHART-403 - Including unassigned issues into the chart
-
-                int totalTime = 0;
-                for (Iterator iteratorT = timeSpentColl.iterator(); iteratorT.hasNext();)
+            	System.out.println("inside the CalculateWorkloadDataset: ");
+               
+                
+                 totalTime = 100;
+                
+               /* for (Iterator iteratorT = timeSpentColl.iterator(); iteratorT.hasNext();)
                 {
-                    Object time = iteratorT.next();
 
+                    Object time = iteratorT.next();
+                    System.out.println("Time : "+time);
                     int num = statsMap.getCoordinate(entry, time);
+                    System.out.println("for loop of Timespentcoll : "+num);
 
                     if (time != null)
                         totalTime += num * ((Long) time);
-                }
+                    System.out.println("Total Time : "+totalTime);
+                }*/
 
                 PieSegmentWrapper psw = new PieSegmentWrapper(entry, i18nHelper, statisticType, constantsManager, customFieldManager);
+                
                 dataset.setValue(psw, totalTime);
             }
         }
+        System.out.println("Total time pie proportion: "+totalTime);
 
         return dataset;
     }
@@ -433,6 +469,7 @@ public class WorkloadPieChart implements ChartParamKeys
     private PieSegmentWrapperHolder(PieSegmentWrapper pieSegmentWrapper)
     {
         this.pieSegmentWrapper = pieSegmentWrapper;
+        System.out.println("Pie sergment Wrapper : "+pieSegmentWrapper);
         this.totalTime = totalTime;
     }
 }

@@ -283,6 +283,7 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
     List<WorkloadPieDataRow> getData(Map<String, Object> chartParams)
     {
         final CategoryURLGenerator completeUrlGenerator = (CategoryURLGenerator) chartParams.get(KEY_COMPLETE_DATASET_URL_GENERATOR);
+        System.out.println("CompleteUrlGenerator : "+completeUrlGenerator.toString());
         final CategoryDataset completeDataset = (CategoryDataset) chartParams.get(KEY_COMPLETE_DATASET);
 
         return generateDataSet(completeDataset, completeUrlGenerator);
@@ -298,9 +299,9 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             int val = dataset.getValue(0, col).intValue();
             String url = urlGenerator.generateURL(dataset, 0, col);
             int percentage = dataset.getValue(1, col).intValue();
+            System.out.println("From WorkloadPieDataROw: key :"+key+" val : "+val+" url : "+url+"percentage : "+percentage);
             data.add(new WorkloadPieDataRow(key.toString(), url, val, percentage));
         }
-
         return data;
     }
 
