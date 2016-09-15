@@ -19,7 +19,6 @@
         #end
         #if ($project)
             <b><a href="${requestContext.canonicalBaseUrl}/browse/$project.key">$textutils.htmlEncode($project.name)</a></b>
-                                <input type = "text" value = $numIssues />
             
         #elseif ($searchRequest)
             <b><a href="${requestContext.canonicalBaseUrl}/secure/IssueNavigator.jspa?requestId=${searchRequest.id}&mode=hide">$textutils.htmlEncode($searchRequest.name)</a></b>
@@ -31,11 +30,9 @@
 
     #if ($errorMessage)
         <tr bgcolor="#FFFFFF"><td>$i18n.getText($errorMessage)</td></tr>
-                            <input type = "text" name = "Test " value = $numIssues ></input>
         
     #elseif ((!$completeDataset) || ($completeDataset.columnCount == 0))
         <tr bgcolor="#FFFFFF"><td>$i18n.getText("portlet.workloadpie.noissues")</td></tr>
-                            <input type = "text" name = "Test " value = $numIssues ></input>
         
     #else
         <tr bgcolor="#FFFFFF">
@@ -49,7 +46,6 @@
                     </center>
 
                     $i18n.getText("portlet.workloadpie.numissues", "<b>$numIssues</b>").
-                            <input type = "text" name = "Test " value = $numIssues ></input>
                 #else
                     $i18n.getText("portlet.workloadpie.nochart")
                 #end

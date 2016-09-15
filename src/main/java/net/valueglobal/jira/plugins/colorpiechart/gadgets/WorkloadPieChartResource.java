@@ -136,6 +136,8 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
                     height
             );
             params.putAll(theChart.getParameters());
+            
+            System.out.println("FROM REST RESOURCE  theChart.getParameters Method :"+theChart.getParameters().size());
 
             final JiraDurationUtils jiraDurationUtils = getJiraDurationUtils();
 
@@ -147,7 +149,7 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
                     height,
                     getProjectNameOrFilterTitle(projectOrFilterId),
                     getFilterUrl(params),
-                    jiraDurationUtils.getShortFormattedDuration((Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS)),
+                    (Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS),
                     statisticType,
                    // issueTimeType,
                     customFieldLabel,
@@ -156,7 +158,9 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             if (returnData)
             {
                 workloadPieChartJson.data = getData(theChart.getParameters());
-           //     workloadPieChartJson.timeSpent = jiraDurationUtils.getShortFormattedDuration((Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS));
+                workloadPieChartJson.timeSpent = (Long) theChart.getParameters().get(KEY_TOTAL_WORK_HOURS);
+                System.out.println("KEYTOTALWORKHOURS : "+theChart.getParameters().get(KEY_TOTAL_WORK_HOURS));
+
             }
 
             return Response.ok(workloadPieChartJson).cacheControl(CacheControl.NO_CACHE).build();
@@ -239,8 +243,8 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
         @XmlElement
         private List<WorkloadPieDataRow> data;
 
-       /* @XmlElement
-        private String timeSpent;*/
+        @XmlElement
+        private Long timeSpent;
 
         @XmlElement
         private String statType;
@@ -261,7 +265,8 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
         }
 ///CLOVER:ON
 
-        public WorkloadPieChartJson(String location, String imageMap, String imageMapName, int width, int height, String filterTitle, String filterUrl, String timeSpent, String statType, 
+        public WorkloadPieChartJson(String location, String imageMap, String imageMapName, int width,
+        		int height, String filterTitle, String filterUrl, Long timeSpent, String statType, 
         		//String issueTimeType,
         		String customFieldLabel, String base64Image)
         {
@@ -272,7 +277,7 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             this.height = height;
             this.filterTitle = filterTitle;
             this.filterUrl = filterUrl;
-           // this.timeSpent = timeSpent;
+            this.timeSpent = timeSpent;
             this.statType = statType;
            // this.issueTimeType = issueTimeType;
             this.customFieldLabel = customFieldLabel;
@@ -283,7 +288,6 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
     List<WorkloadPieDataRow> getData(Map<String, Object> chartParams)
     {
         final CategoryURLGenerator completeUrlGenerator = (CategoryURLGenerator) chartParams.get(KEY_COMPLETE_DATASET_URL_GENERATOR);
-        System.out.println("CompleteUrlGenerator : "+completeUrlGenerator.toString());
         final CategoryDataset completeDataset = (CategoryDataset) chartParams.get(KEY_COMPLETE_DATASET);
 
         return generateDataSet(completeDataset, completeUrlGenerator);
@@ -299,7 +303,6 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             int val = dataset.getValue(0, col).intValue();
             String url = urlGenerator.generateURL(dataset, 0, col);
             int percentage = dataset.getValue(1, col).intValue();
-            System.out.println("From WorkloadPieDataROw: key :"+key+" val : "+val+" url : "+url+"percentage : "+percentage);
             data.add(new WorkloadPieDataRow(key.toString(), url, val, percentage));
         }
         return data;

@@ -191,8 +191,8 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
         		System.out.println("Source object : " +srcObj);
 
 
-	        	//String resolve = "resolved";
-	        	String resolve = "done";
+	        	String resolve = "resolved";
+	        	//String resolve = "done";
 	        	String closed = "closed";
 	        	if(destObj.equals("PROJECT") && !(deststatusName.equals(resolve) || deststatusName.equals(closed)))// || !statusName.contains(closed)))
 	        	{
@@ -236,8 +236,8 @@ public class CustomFieldUpdaterListener implements InitializingBean, DisposableB
 	        	System.out.println("Destination Object : "+destObj);
         		System.out.println("Source Status Name Value : " +srcstatusName);
         		System.out.println("Source object : " +srcObj);
-	        	//String resolve = "resolved";
-	        	String resolve = "done";
+	        	String resolve = "resolved";
+	        	//String resolve = "done";
 	        	String closed = "closed";
 	        	if(srcObj.equals("PROJECT") && !(srcstatusName.equals(resolve) || srcstatusName.equals(closed)))// || !statusName.contains(closed)))
 	        	{

@@ -25,6 +25,7 @@ import com.atlassian.jira.issue.statistics.StatisticsMapper;
 import com.atlassian.jira.issue.statistics.ComponentStatisticsMapper;
 import com.atlassian.jira.issue.statistics.TimeTrackingStatisticsMapper;
 import com.atlassian.jira.issue.statistics.TwoDimensionalStatsMap;
+import com.atlassian.jira.issue.statistics.util.OneDimensionalTermHitCollector;
 import com.atlassian.jira.issue.statistics.util.TwoDimensionalTermHitCollector;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.util.I18nHelper;
@@ -45,8 +46,10 @@ import org.jfree.chart.urls.CategoryURLGenerator;
 import org.jfree.chart.urls.PieURLGenerator;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.general.DatasetGroup;
 import org.jfree.data.general.DefaultPieDataset;
 import org.jfree.data.general.PieDataset;
+import org.jfree.util.Log;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -128,9 +131,21 @@ public class WorkloadPieChart implements ChartParamKeys
     {
         final JiraDurationUtils jiraDurationUtils = getJiraDurationUtils();
         final SearchRequest searchRequestCopy = getSearchRequest(searchRequest);
+        System.out.println("From WorkloadPiechart service");
+        System.out.println("SearchRequestCopy value : "+searchRequestCopy);
         final User user = jiraAuthenticationContext.getLoggedInUser();
         StatisticAccessorBean statBean = getStatisticAccessorBean(searchRequestCopy, user);
-
+        System.out.println("Stat Bean  : "+statBean.getCount());
+        System.out.println("Stat Bean get All FIlter By  and get TOtal count : "+statBean.getAllFilterBy(statisticType).getTotalCount());
+        System.out.println("Statistic Type length"+statisticType.length());
+        System.out.println("Stat Bean get Filter Method:"+statBean.getFilter());
+        
+     /*  String statT = statisticType;
+       for(int i = 0; i <= statT.length();i++){
+    	   System.out.println(statT.charAt(i));
+    	  // statBean.getAllFilterBy(statT.)
+       }*/
+        
         StatisticsMapper yAxisStatsMapper; 
         
               
@@ -140,19 +155,29 @@ public class WorkloadPieChart implements ChartParamKeys
 
 
         final StatisticsMapper xAxisStatsMapper = statBean.getMapper(statisticType);
+        
+      System.out.println("XAxis Stats mapper Document Constant : "+xAxisStatsMapper.getDocumentConstant());
 
         TwoDimensionalStatsMap twoDimensionalStatsMap = getTwoDimensionalStatistics(
                 user, searchRequestCopy,
                 xAxisStatsMapper,
                yAxisStatsMapper);
+        //System.out.println("TwoDimensionalStatsMap val : "+twoDimensionalStatsMap.getXAxisUniqueTotal(xAxisStatsMapper));
 
         I18nHelper i18nHelper = jiraAuthenticationContext.getI18nHelper();
 
         PieDataset dataset = calculateWorkloadDataset(twoDimensionalStatsMap, statisticType, i18nHelper);
+        
+        
+/*      double test =  calculatePieDatasetTotal(dataset);
+*/        
+        
         PieDataset sortedDataset = PieDatasetUtil.createSortedPieDataset(dataset);
         PieDataset consolidatedDataset = PieDatasetUtil.createConsolidatedSortedPieDataset(sortedDataset, i18nHelper.getText("portlet.workloadpie.other"), false, 0.02, 10);
 
         final long totalWorkload = calculateTotal(dataset);
+        
+        System.out.println("Total Workload : "+totalWorkload);
 
         I18nHelper i18nBean = jiraAuthenticationContext.getI18nHelper();
         ChartHelper helper = getPieChartGenerator(consolidatedDataset, i18nBean).generateChart();
@@ -169,10 +194,10 @@ public class WorkloadPieChart implements ChartParamKeys
             public String generateSectionLabel(PieDataset dataset, Comparable key)
             {
                 Number value = dataset.getValue(key);
-                System.out.println("Set label generator dataset : "+dataset.getKeys());
-                System.out.println("dataset.getItemCount : "+dataset.getItemCount());
+                System.out.println("Set label generator dataset : "+value);
+             //   System.out.println("dataset.getItemCount : "+dataset.getItemCount());
                 String timeInDays = jiraDurationUtils.getShortFormattedDuration(value.longValue());
-                return key.toString();
+                return key.toString() + " : " + value.intValue();
 
             }
         });
@@ -181,9 +206,9 @@ public class WorkloadPieChart implements ChartParamKeys
             public String generateToolTip(PieDataset dataset, Comparable key)
             {
                 int convertToSec = 1;
-                Number number = dataset.getValue(key);
-                System.out.println("Generate Tool Tip Number"+number);
-                return key.toString();// + ": " + jiraDurationUtils.getShortFormattedDuration(convertToSec * (number.longValue())) + " (" + (100 * number.longValue() / totalWorkload) + "%)";
+                 Number number = dataset.getValue(key).intValue();
+                System.out.println("Generate Tool Tip Number"+number); 
+                return key.toString() + " : " + number + " Issues";
             }
         });
 	
@@ -193,16 +218,16 @@ public class WorkloadPieChart implements ChartParamKeys
         {
             public String generateURL(PieDataset dataset, Comparable key, int section)
             {
-            	System.out.println("Pie Url Generator : "+key);
-            	System.out.println("Pie Url Generator dataset item count : "+dataset.getItemCount());
-            	System.out.println("Pie Url Generator section : "+section);
+            //	System.out.println("Pie Url Generator : "+key);
+            //	System.out.println("Pie Url Generator dataset item count : "+dataset.getItemCount());
+           // 	System.out.println("Pie Url Generator section : "+section);
 
 
                 if (key instanceof PieSegmentWrapper)
                 {
                     SearchRequest searchUrlSuffix = xAxisStatsMapper.getSearchUrlSuffix(((PieSegmentWrapper) key).getKey(), searchRequestCopy);
                     //  System.out.println("Pie Url Generator : searchUrlSuffix : "+ searchUrlSuffix.getQuery());
-                    System.out.println("Pie Url Generator : searchRequestCopy : "+searchRequestCopy);
+            //        System.out.println("Pie Url Generator : searchRequestCopy : "+searchRequestCopy);
 
                     return velocityRequestContext.getCanonicalBaseUrl() + "/secure/IssueNavigator.jspa?reset=true" + searchService.getQueryString(user, (searchUrlSuffix == null) ? new QueryImpl() : searchUrlSuffix.getQuery());
                 }
@@ -228,13 +253,13 @@ public class WorkloadPieChart implements ChartParamKeys
         DefaultCategoryDataset completeDataset = new DefaultCategoryDataset();
         for (Iterator iterator = sortedDataset.getKeys().iterator(); iterator.hasNext();)
         {
-        	System.out.println("Iterator value : "+ iterator);
+       // 	System.out.println("Iterator value : "+ iterator);
             Comparable key = (Comparable) iterator.next();
-        	System.out.println("key value : "+ key);
+       // 	System.out.println("key value : "+ key);
 
             Number value = sortedDataset.getValue(key);
-        	System.out.println("Number value : "+ value);
-System.out.println("CompleteDataset of column count : "+completeDataset.getColumnCount());
+       // 	System.out.println("Number value : "+ value);
+       //     System.out.println("CompleteDataset of column count : "+completeDataset.getColumnCount());
             // The explicit usage of the Integer wrapper is required so that the pie segment labels appear properly.
         /*  if(!value.equals(0)){
         	completeDataset.addValue(new Integer(value.intValue() / 3600), i18nHelper.getText("core.dateutils.hours"), key);
@@ -246,8 +271,8 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
         {
             public String generateURL(CategoryDataset categoryDataset, int row, int col)
             {
-            	System.out.println("Row : "+row);
-            	System.out.println("Col : "+col);
+            //	System.out.println("Row : "+row);
+            //	System.out.println("Col : "+col);
                 Comparable key = categoryDataset.getColumnKey(col);
                 if (key instanceof PieSegmentWrapper)
                 {
@@ -258,9 +283,15 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
                 return null;
             }
         });
+      
         params.put(KEY_TOTAL_WORK_HOURS, totalWorkload);
         params.put("imagemapHtml", helper.getImageMap());
         params.put("imagemapName", helper.getImageMapName());
+        
+        Object testParam = params.get(KEY_TOTAL_WORK_HOURS);
+        
+        System.out.println("KeyTotalWorkHours : "+testParam);
+        System.out.println("TotalWorkload : "+totalWorkload);
 
         if (inline)
         {
@@ -270,7 +301,28 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
         return new Chart(helper.getLocation(), helper.getImageMap(), helper.getImageMapName(), params);
     }
 
-    
+/*    public static double calculatePieDatasetTotal(PieDataset dataset) {
+    	 //ParamChecks.nullNotPermitted(dataset, "dataset");
+    	        List keys = dataset.getKeys();
+    	        double totalValue = 0;
+    	        Iterator iterator = keys.iterator();
+    	        while (iterator.hasNext()) {
+    	            Comparable current = (Comparable) iterator.next();
+    	            System.out.println("Current calculate Pie dataset Total : "+current);
+    	            if (current != null) {
+    	                Number value = dataset.getValue(current);
+    	                double v = 0.0;
+    	                if (value != null) {
+    	                    v = value.doubleValue();
+    	                }
+    	                if (v > 0) {
+    	                    totalValue = totalValue + v;
+    	               }
+    	            }
+    	        }
+    	        return totalValue;
+    	    }
+*/    
     public static class PieRenderer 
     { 
         private Color[] color; 
@@ -287,17 +339,17 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
             Object [] test = keys.toArray();
             
             //System.out.println("Test :" + test[0]);
-            System.out.println("Test length :" + test.length);
+          //  System.out.println("Test length :" + test.length);
 
             
           // if(test.equals(consolidatedDataset.getValue(0)))
             //System.out.println("keys index of " +keys.toString());
             for (int i = 0; i < test.length; i++){ 
             	String x = test[i].toString();
-            	System.out.println(x);
+            //	System.out.println(x);
             	if(x.contains("Yellow"))
             	{
-        			System.out.println("Sucesssssssssssssssssssssss");
+        	//		System.out.println("Sucesssssssssssssssssssssss");
                     plot.setSectionPaint(keys.get(i),this.color[0]);
                 }
             	else if(x.contains("Red"))
@@ -366,6 +418,7 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
 
     protected SearchRequest getSearchRequest(SearchRequest searchRequest)
     {
+   // 	System.out.println("Search Request : "+searchRequest);
         return new SearchRequest(searchRequest);
     }
 
@@ -378,12 +431,13 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
     private TwoDimensionalStatsMap getTwoDimensionalStatistics(User user, SearchRequest searchRequest, StatisticsMapper xAxis, StatisticsMapper yAxis)
             throws SearchException
     {
-    	System.out.println("Y Axis Mapper : "+ yAxis);
         TwoDimensionalStatsMap statisticsMap2d = getTwoDimensionalStatsMap(xAxis, yAxis);
-        System.out.println("Statistics Map 2d : "+statisticsMap2d.getyAxisMapper().toString());
         Collector hitCollector = getTwoDimensionalTermHitCollector(statisticsMap2d);
         searchProvider.search(searchRequest.getQuery(), user, hitCollector);
-
+        
+       long searchcount =  searchProvider.searchCount(searchRequest.getQuery(), user);
+     System.out.println("searchRequest GET Query : "+searchRequest.getQuery());
+   //    System.out.println(" Search Count Values "+searchcount);
         return statisticsMap2d;
     }
 
@@ -408,23 +462,39 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
 
         // weigh each statistic type with time factor - 2D matrix multiply
         Collection statisticsColl = statsMap.getXAxis();
-        Collection timeSpentColl = statsMap.getYAxis();
+        int timeSpentColl = 0;
+        /*for(Object test : statisticsColl)
+        {
+        	System.out.println("Test of statistics coll : " +test);
+            timeSpentColl = statsMap.getXAxisUniqueTotal(test);
+            System.out.println("Integer type timespent : "+timeSpentColl);
+
+        }
+       // int timeSpentColl = statsMap.getXAxisUniqueTotal(statisticsColl);
+        System.out.println("Integer type timespent : "+timeSpentColl);*/
         int totalTime = 0;
         
 
         for (Iterator iteratorC = statisticsColl.iterator(); iteratorC.hasNext();)
         {
             Object entry = iteratorC.next();
-            System.out.println("Entry : "+entry);
+     //       System.out.println("Entry : "+entry);
             if (entry != null || statisticType.equals(FilterStatisticsValuesGenerator.ASSIGNEES))
             {  // we only count issues where components have been specified
                // JCHART-403 - Including unassigned issues into the chart
-            	System.out.println("inside the CalculateWorkloadDataset: ");
+    //        	System.out.println("inside the CalculateWorkloadDataset: ");
                
                 
-                 totalTime = 100;
+                timeSpentColl = statsMap.getXAxisUniqueTotal(entry);
+
+                System.out.println("GetXAxisUniqueTotal : "+timeSpentColl);
+
+                 totalTime = timeSpentColl;
                 
+                 
+                 
                /* for (Iterator iteratorT = timeSpentColl.iterator(); iteratorT.hasNext();)
+  
                 {
 
                     Object time = iteratorT.next();
@@ -442,7 +512,7 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
                 dataset.setValue(psw, totalTime);
             }
         }
-        System.out.println("Total time pie proportion: "+totalTime);
+   //     System.out.println("Total time pie proportion: "+totalTime);
 
         return dataset;
     }
@@ -456,7 +526,7 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
             Number n = dataset.getValue(key);
             total += n.longValue();
         }
-        System.out.println("total Calculate Total : "+total);
+       System.out.println("total Calculate Total : "+total);
         return total;
     }
 
@@ -469,7 +539,7 @@ System.out.println("CompleteDataset of column count : "+completeDataset.getColum
     private PieSegmentWrapperHolder(PieSegmentWrapper pieSegmentWrapper)
     {
         this.pieSegmentWrapper = pieSegmentWrapper;
-        System.out.println("Pie sergment Wrapper : "+pieSegmentWrapper);
+   //     System.out.println("Pie sergment Wrapper : "+pieSegmentWrapper);
         this.totalTime = totalTime;
     }
 }

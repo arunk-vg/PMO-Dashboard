@@ -28,9 +28,7 @@
     <UserPref name="statistictype" datatype="hidden" />
     <!-- <UserPref name="issuetimetype" datatype="hidden" /> -->
     <Content type="html" view="profile,canvas,home">
-        <![CDATA[
-        Hi Hello
-        
+        <![CDATA[     
         
         #requireResource("com.atlassian.jira.gadgets:autocomplete")
         #includeResources()
@@ -116,7 +114,7 @@ AJS.Gadget({
 
             var safeEscapeString = function(text) {
                 if(text) {
-                alert(text);
+               // alert(text);
                     return gadgets.util.escapeString(text);
                 } else {
                     return '';
@@ -149,13 +147,14 @@ AJS.Gadget({
                 }
 		
 
-                var statTypeLabel = args.chart.customFieldLabel;
+                var statTypeLabel = args.chart.customFieldLabel || gadget.getMsg("gadget.filterstats.field.statistictype." + args.chart.statType);
+alert(args.chart.timeSpent);
 
-alert(statTypeLabel);
 
-                getChartContainer().append(
-                        AJS.$("<p/>").append(AJS.format("__MSG_gadget.workloadpie.summary__", linkStart, "<strong>" + statTypeLabel + "</strong>", linkEnd) + "&nbsp;&nbsp;&nbsp;&nbsp;" +
-                                             "<strong>" + AJS.$("<span/>", { "text" : statTypeLabel }).html() + "</strong>")
+                getChartContainer().append(                                           
+                        AJS.$("<p/>").append(AJS.format("__MSG_gadget.workloadpie.summary__", linkStart, "<strong>" + args.chart.timeSpent + "</strong>", linkEnd) + "&nbsp;&nbsp;&nbsp;&nbsp;" +
+                                            "<strong>" + gadget.getMsg("gadget.workloadpie.field.by")  + "</strong>" +
+                                            "<strong>" + AJS.$("<span/>", { "text" : statTypeLabel }).html() + "</strong>")                                                                 
                 );
             })();
 
@@ -248,8 +247,7 @@ alert(statTypeLabel);
                         }
                     };
                 }
-<!--                     console.log("GADGET : ", gadget);
- -->                
+                
             }
         }]
     }
