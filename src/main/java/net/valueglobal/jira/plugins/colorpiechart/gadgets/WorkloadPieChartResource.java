@@ -92,8 +92,8 @@ public class WorkloadPieChartResource extends ProjectOrFilterIdBasedChartResourc
             @QueryParam("projectOrFilterId") String projectOrFilterId,
             @QueryParam("statistictype") String statisticType,
            // @QueryParam("issuetimetype") String issueTimeType,
-            @QueryParam("width") @DefaultValue("400") int width,
-            @QueryParam("height") @DefaultValue("250") int height,
+            @QueryParam("width") int width,
+            @QueryParam("height")  int height,
             @QueryParam("returnData") @DefaultValue("false") boolean returnData,
             @QueryParam (INLINE) @DefaultValue ("false") final boolean inline) throws SearchException, IOException
     {

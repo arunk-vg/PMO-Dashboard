@@ -87,6 +87,7 @@ AJS.Gadget({
     view: {
         enableReload: true,
         onResizeReload: true,
+        onResizeAdjustHeight: true,
         template: function (args) {
             var gadget = this;
 
@@ -148,7 +149,7 @@ AJS.Gadget({
 		
 
                 var statTypeLabel = args.chart.customFieldLabel || gadget.getMsg("gadget.filterstats.field.statistictype." + args.chart.statType);
-alert(args.chart.timeSpent);
+		//	alert(args.chart.timeSpent);
 
 
                 getChartContainer().append(                                           
@@ -215,7 +216,9 @@ alert(args.chart.timeSpent);
         args: [{
             key: "chart",
             ajaxOptions: function () {
-                var width = Math.round(gadgets.window.getViewportDimensions().width * (gadgets.views.getCurrentView().getName() === "canvas" ? 0.6 : 0.9));
+            
+            alert("ViewPort Dimensions :  "+gadgets.window.getViewportDimensions().width);
+                var width = Math.round(gadgets.window.getViewportDimensions().width * 0.9);
                 if (width < 150){
                     width = 150;
                 }
@@ -227,21 +230,22 @@ alert(args.chart.timeSpent);
                         data:  {
                             projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
                             statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
-<!--                             issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
- -->                            width: Math.round(width * 0.7),
+                            width: Math.round(width * 0.7),
                             height: Math.round(height * 0.7),
                             returnData: true,
                             inline: true
                         }
                     };
                 } else {
+              
+                
+                alert("Width : " + width + " Height : "+height );
                     return {
                         url: "/rest/chartplugin/1.0/workloadpie/generate",
                         data:  {
                             projectOrFilterId: gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
                             statistictype: gadgets.util.unescapeString(this.getPref("statistictype")),
-<!--                             issuetimetype: gadgets.util.unescapeString(this.getPref("issuetimetype")),
- -->                            width: width,
+                            width: width,
                             height: height,
                             inline: true
                         }
